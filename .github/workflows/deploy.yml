@@ -1,0 +1,51 @@
+name: LongSword CI/CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, staging, development, testing]
+  pull_request:
+    # This triggers the workflow when a PR is opened or updated
+    # targeting any of these branches.
+    branches: [main, staging, development]
+
+permissions:
+  contents: write # Required for peaceiris/actions-gh-pages
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # checkout the repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint Code
+        run: npm run lint
+
+      - name: Build Project
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' # Only deploy when pushing to main so that only PR creation doesn't deploy and cause issues on live url
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+
+
+
+
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: true
